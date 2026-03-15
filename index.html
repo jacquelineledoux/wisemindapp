@@ -17,32 +17,13 @@
     
     <style>
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printable-content, #printable-content * {
-                visibility: visible;
-            }
-            #printable-content {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            
-            .no-print {
-                display: none !important;
-            }
-            
-            * {
-                overflow: visible !important;
-                max-height: none !important;
-            }
+            body * { visibility: hidden; }
+            #printable-content, #printable-content * { visibility: visible; }
+            #printable-content { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+            * { overflow: visible !important; max-height: none !important; }
         }
-        
-        .printing-active {
-            overflow: visible !important;
-        }
+        .printing-active { overflow: visible !important; }
     </style>
 </head>
 <body>
@@ -51,138 +32,156 @@
     <script type="text/babel">
         const { useState, useEffect, createContext, useContext } = React;
 
-        // ==================== DATA STORE ====================
+        // ==================== DATA & DEFINITIONS ====================
         
-        const DBT_MODULES = [
-          'Mindfulness',
-          'Distress Tolerance',
-          'Emotion Regulation',
-          'Interpersonal Effectiveness'
-        ];
+        const DBT_MODULES = ['Mindfulness', 'Distress Tolerance', 'Emotion Regulation', 'Interpersonal Effectiveness'];
 
         const SKILL_DEFINITIONS = {
-          'Mindfulness': [
-            'Wise Mind', 'Observe', 'Describe', 'Participate',
-            'Non-Judgmental Stance', 'One-Mindfully', 'Effectiveness'
-          ],
-          'Distress Tolerance': [
-            'STOP', 'TIPP', 'Paced Breathing', 'Grounding (5-4-3-2-1)',
-            'Self-Soothe with Senses', 'ACCEPTS', 'IMPROVE the Moment',
-            'Radical Acceptance', 'Pros and Cons', 'Willingness'
-          ],
-          'Emotion Regulation': [
-            'Identify & Label Emotions', 'Check the Facts', 'Opposite Action',
-            'Problem Solving', 'ABC PLEASE', 'Build Positive Experiences'
-          ],
-          'Interpersonal Effectiveness': [
-            'DEAR MAN', 'GIVE', 'FAST', 'Validation',
-            'Managing Conflict', 'Setting Boundaries'
-          ]
+          'Mindfulness': ['Wise Mind', 'Observe', 'Describe', 'Participate', 'Non-Judgmental Stance', 'One-Mindfully', 'Effectiveness'],
+          'Distress Tolerance': ['STOP', 'TIPP', 'Paced Breathing', 'Grounding (5-4-3-2-1)', 'Self-Soothe with Senses', 'ACCEPTS', 'IMPROVE the Moment', 'Radical Acceptance', 'Pros and Cons', 'Willingness'],
+          'Emotion Regulation': ['Identify & Label Emotions', 'Check the Facts', 'Opposite Action', 'Problem Solving', 'ABC PLEASE', 'Build Positive Experiences'],
+          'Interpersonal Effectiveness': ['DEAR MAN', 'GIVE', 'FAST', 'Validation', 'Managing Conflict', 'Setting Boundaries']
         };
 
-        const DataStore = {
-          getUsers: () => {
-            const users = localStorage.getItem('dbt_users');
-            return users ? JSON.parse(users) : [];
+        const WORKSHEET_DEFINITIONS = [
+          {
+            id: 'ws-1',
+            title: 'Wise Mind Practice',
+            module: 'Mindfulness',
+            description: 'Find the balance between Emotion Mind and Reasonable Mind',
+            fields: [
+              { id: 'situation', label: 'Describe the situation you need to make a decision about:', type: 'textarea' },
+              { id: 'emotion_mind', label: 'What is Emotion Mind saying?', type: 'textarea' },
+              { id: 'reasonable_mind', label: 'What is Reasonable Mind saying?', type: 'textarea' },
+              { id: 'wise_mind', label: 'After breathing and centering, what does Wise Mind say?', type: 'textarea' },
+              { id: 'action', label: 'What action will you take from Wise Mind?', type: 'textarea' }
+            ]
           },
-
-          getUser: (userId) => {
-            const users = DataStore.getUsers();
-            return users.find(u => u.id === userId);
+          {
+            id: 'ws-2',
+            title: 'Opposite Action Worksheet',
+            module: 'Emotion Regulation',
+            description: 'Change your emotion by acting opposite to the emotion urge',
+            fields: [
+              { id: 'emotion', label: 'What emotion are you experiencing?', type: 'text' },
+              { id: 'intensity', label: 'Intensity (0-10):', type: 'text' },
+              { id: 'situation', label: 'What is the situation?', type: 'textarea' },
+              { id: 'facts', label: 'Check the Facts: Does the emotion fit the facts?', type: 'textarea' },
+              { id: 'urge', label: 'What is the action urge?', type: 'textarea' },
+              { id: 'opposite', label: 'What is the OPPOSITE action?', type: 'textarea' },
+              { id: 'plan', label: 'How will you do opposite action ALL THE WAY?', type: 'textarea' },
+              { id: 'result', label: 'After doing opposite action, how do you feel? (0-10)', type: 'text' }
+            ]
           },
-
-          getUserByEmail: (email) => {
-            const users = DataStore.getUsers();
-            return users.find(u => u.email.toLowerCase() === email.toLowerCase());
+          {
+            id: 'ws-3',
+            title: 'Check the Facts',
+            module: 'Emotion Regulation',
+            description: 'Determine if your emotional reaction fits the facts',
+            fields: [
+              { id: 'emotion', label: 'What emotion are you feeling?', type: 'text' },
+              { id: 'intensity', label: 'How intense? (0-10)', type: 'text' },
+              { id: 'event', label: 'What is the prompting event? (Just the facts)', type: 'textarea' },
+              { id: 'interpretation', label: 'What is your interpretation of the event?', type: 'textarea' },
+              { id: 'assumptions', label: 'What assumptions or judgments are you making?', type: 'textarea' },
+              { id: 'alternative', label: 'What are alternative explanations?', type: 'textarea' },
+              { id: 'fits_facts', label: 'Does the emotion fit the facts?', type: 'textarea' }
+            ]
           },
-
-          addUser: (user) => {
-            const users = DataStore.getUsers();
-            users.push(user);
-            localStorage.setItem('dbt_users', JSON.stringify(users));
+          {
+            id: 'ws-4',
+            title: 'DEAR MAN',
+            module: 'Interpersonal Effectiveness',
+            description: 'Ask for what you need effectively',
+            fields: [
+              { id: 'objective', label: 'What is your objective?', type: 'textarea' },
+              { id: 'describe', label: 'DESCRIBE the situation (just the facts):', type: 'textarea' },
+              { id: 'express', label: 'EXPRESS your feelings and opinions:', type: 'textarea' },
+              { id: 'assert', label: 'ASSERT what you want clearly:', type: 'textarea' },
+              { id: 'reinforce', label: 'REINFORCE (explain positive effects):', type: 'textarea' },
+              { id: 'mindful', label: 'Stay MINDFUL: How will you stay focused?', type: 'textarea' },
+              { id: 'appear', label: 'APPEAR confident: How?', type: 'textarea' },
+              { id: 'negotiate', label: 'NEGOTIATE: What are you willing to compromise?', type: 'textarea' }
+            ]
           },
-
-          updateUser: (userId, updates) => {
-            const users = DataStore.getUsers();
-            const index = users.findIndex(u => u.id === userId);
-            if (index !== -1) {
-              users[index] = { ...users[index], ...updates, updatedAt: Date.now() };
-              localStorage.setItem('dbt_users', JSON.stringify(users));
-              return users[index];
-            }
-            return null;
+          {
+            id: 'ws-5',
+            title: 'Pros and Cons',
+            module: 'Distress Tolerance',
+            description: 'Evaluate pros and cons of tolerating distress vs. acting on urges',
+            fields: [
+              { id: 'urge', label: 'What is the urge or crisis behavior?', type: 'textarea' },
+              { id: 'pros_tolerate', label: 'PROS of resisting the urge:', type: 'textarea' },
+              { id: 'cons_tolerate', label: 'CONS of resisting the urge:', type: 'textarea' },
+              { id: 'pros_act', label: 'PROS of acting on the urge:', type: 'textarea' },
+              { id: 'cons_act', label: 'CONS of acting on the urge:', type: 'textarea' },
+              { id: 'decision', label: 'Based on this, what will you do?', type: 'textarea' }
+            ]
           },
-
-          deleteUser: (userId) => {
-            const users = DataStore.getUsers();
-            const filtered = users.filter(u => u.id !== userId);
-            localStorage.setItem('dbt_users', JSON.stringify(filtered));
-            
-            localStorage.removeItem(`dbt_skills_${userId}`);
-            localStorage.removeItem(`dbt_worksheets_${userId}`);
-            localStorage.removeItem(`dbt_safety_plan_${userId}`);
-            localStorage.removeItem(`dbt_vulnerability_${userId}`);
-            localStorage.removeItem(`dbt_badges_${userId}`);
-            localStorage.removeItem(`dbt_views_${userId}`);
+          {
+            id: 'ws-6',
+            title: 'Radical Acceptance',
+            module: 'Distress Tolerance',
+            description: 'Practice accepting reality as it is',
+            fields: [
+              { id: 'situation', label: 'What reality are you having difficulty accepting?', type: 'textarea' },
+              { id: 'fighting', label: 'How are you fighting reality?', type: 'textarea' },
+              { id: 'suffering', label: 'How is refusing to accept causing suffering?', type: 'textarea' },
+              { id: 'caused', label: 'What caused this reality?', type: 'textarea' },
+              { id: 'accept_statement', label: 'Write an acceptance statement:', type: 'textarea' },
+              { id: 'feelings', label: 'What feelings come up when you practice acceptance?', type: 'textarea' }
+            ]
           },
-
-          getSkillEntries: (userId) => {
-            const key = `dbt_skills_${userId}`;
-            const entries = localStorage.getItem(key);
-            return entries ? JSON.parse(entries) : [];
-          },
-
-          addSkillEntry: (entry) => {
-            const key = `dbt_skills_${entry.userId}`;
-            const entries = DataStore.getSkillEntries(entry.userId);
-            entries.push(entry);
-            localStorage.setItem(key, JSON.stringify(entries));
-          },
-
-          deleteSkillEntry: (userId, entryId) => {
-            const key = `dbt_skills_${userId}`;
-            const entries = DataStore.getSkillEntries(userId);
-            const filtered = entries.filter(e => e.id !== entryId);
-            localStorage.setItem(key, JSON.stringify(filtered));
-          },
-
-          getSafetyPlan: (userId) => {
-            const key = `dbt_safety_plan_${userId}`;
-            const plan = localStorage.getItem(key);
-            return plan ? JSON.parse(plan) : null;
-          },
-
-          saveSafetyPlan: (plan) => {
-            const key = `dbt_safety_plan_${plan.userId}`;
-            localStorage.setItem(key, JSON.stringify(plan));
-          },
-
-          exportUserData: (userId) => {
-            return {
-              version: '1.9.3',
-              exportDate: new Date().toISOString(),
-              user: DataStore.getUser(userId),
-              skillEntries: DataStore.getSkillEntries(userId),
-              safetyPlan: DataStore.getSafetyPlan(userId)
-            };
+          {
+            id: 'ws-7',
+            title: 'ABC PLEASE Tracker',
+            module: 'Emotion Regulation',
+            description: 'Track your self-care to reduce emotional vulnerability',
+            fields: [
+              { id: 'date', label: 'Date:', type: 'text' },
+              { id: 'accumulate', label: 'Accumulate Positive Experiences:', type: 'textarea' },
+              { id: 'build_mastery', label: 'Build Mastery:', type: 'textarea' },
+              { id: 'physical', label: 'PhysicaL illness: Did you treat physical illness, take meds?', type: 'radio', options: ['Yes', 'No', 'N/A'] },
+              { id: 'eating', label: 'Eating: Did you eat balanced meals?', type: 'radio', options: ['Yes', 'No', 'Somewhat'] },
+              { id: 'avoid', label: 'Avoid substances: Did you avoid alcohol/drugs?', type: 'radio', options: ['Yes', 'No'] },
+              { id: 'sleep', label: 'Sleep: Did you get enough sleep?', type: 'radio', options: ['Yes', 'No'] },
+              { id: 'exercise', label: 'Exercise: Did you get physical activity?', type: 'radio', options: ['Yes', 'No'] }
+            ]
           }
+        ];
+
+        const DataStore = {
+          getUsers: () => { const users = localStorage.getItem('dbt_users'); return users ? JSON.parse(users) : []; },
+          getUser: (userId) => { const users = DataStore.getUsers(); return users.find(u => u.id === userId); },
+          getUserByEmail: (email) => { const users = DataStore.getUsers(); return users.find(u => u.email.toLowerCase() === email.toLowerCase()); },
+          addUser: (user) => { const users = DataStore.getUsers(); users.push(user); localStorage.setItem('dbt_users', JSON.stringify(users)); },
+          updateUser: (userId, updates) => { const users = DataStore.getUsers(); const index = users.findIndex(u => u.id === userId); if (index !== -1) { users[index] = { ...users[index], ...updates, updatedAt: Date.now() }; localStorage.setItem('dbt_users', JSON.stringify(users)); return users[index]; } return null; },
+          deleteUser: (userId) => { const users = DataStore.getUsers(); const filtered = users.filter(u => u.id !== userId); localStorage.setItem('dbt_users', JSON.stringify(filtered)); localStorage.removeItem(`dbt_skills_${userId}`); localStorage.removeItem(`dbt_worksheets_${userId}`); localStorage.removeItem(`dbt_safety_plan_${userId}`); localStorage.removeItem(`dbt_vulnerability_${userId}`); },
+          getSkillEntries: (userId) => { const key = `dbt_skills_${userId}`; const entries = localStorage.getItem(key); return entries ? JSON.parse(entries) : []; },
+          addSkillEntry: (entry) => { const key = `dbt_skills_${entry.userId}`; const entries = DataStore.getSkillEntries(entry.userId); entries.push(entry); localStorage.setItem(key, JSON.stringify(entries)); },
+          deleteSkillEntry: (userId, entryId) => { const key = `dbt_skills_${userId}`; const entries = DataStore.getSkillEntries(userId); const filtered = entries.filter(e => e.id !== entryId); localStorage.setItem(key, JSON.stringify(filtered)); },
+          getWorksheetSessions: (userId) => { const key = `dbt_worksheets_${userId}`; const sessions = localStorage.getItem(key); return sessions ? JSON.parse(sessions) : {}; },
+          saveWorksheetSession: (userId, sessionId, sessionData) => { const key = `dbt_worksheets_${userId}`; const sessions = DataStore.getWorksheetSessions(userId); sessions[sessionId] = sessionData; localStorage.setItem(key, JSON.stringify(sessions)); },
+          deleteWorksheetSession: (userId, sessionId) => { const key = `dbt_worksheets_${userId}`; const sessions = DataStore.getWorksheetSessions(userId); delete sessions[sessionId]; localStorage.setItem(key, JSON.stringify(sessions)); },
+          getWorksheetResponses: (sessionId) => { const key = `dbt_worksheet_responses_${sessionId}`; const responses = localStorage.getItem(key); return responses ? JSON.parse(responses) : {}; },
+          saveWorksheetResponse: (sessionId, fieldId, value) => { const key = `dbt_worksheet_responses_${sessionId}`; const responses = localStorage.getItem(key); const current = responses ? JSON.parse(responses) : {}; current[fieldId] = value; localStorage.setItem(key, JSON.stringify(current)); },
+          getSafetyPlan: (userId) => { const key = `dbt_safety_plan_${userId}`; const plan = localStorage.getItem(key); return plan ? JSON.parse(plan) : null; },
+          saveSafetyPlan: (plan) => { const key = `dbt_safety_plan_${plan.userId}`; localStorage.setItem(key, JSON.stringify(plan)); },
+          getVulnerabilityEntries: (userId) => { const key = `dbt_vulnerability_${userId}`; const entries = localStorage.getItem(key); return entries ? JSON.parse(entries) : []; },
+          addVulnerabilityEntry: (entry) => { const key = `dbt_vulnerability_${entry.userId}`; const entries = DataStore.getVulnerabilityEntries(entry.userId); entries.push(entry); localStorage.setItem(key, JSON.stringify(entries)); },
+          deleteVulnerabilityEntry: (userId, entryId) => { const key = `dbt_vulnerability_${userId}`; const entries = DataStore.getVulnerabilityEntries(userId); const filtered = entries.filter(e => e.id !== entryId); localStorage.setItem(key, JSON.stringify(filtered)); },
+          exportUserData: (userId) => { return { version: '1.9.3', exportDate: new Date().toISOString(), user: DataStore.getUser(userId), skillEntries: DataStore.getSkillEntries(userId), worksheetSessions: DataStore.getWorksheetSessions(userId), safetyPlan: DataStore.getSafetyPlan(userId), vulnerabilityEntries: DataStore.getVulnerabilityEntries(userId) }; }
         };
 
         window.DataStore = DataStore;
         window.DBT_MODULES = DBT_MODULES;
         window.SKILL_DEFINITIONS = SKILL_DEFINITIONS;
+        window.WORKSHEET_DEFINITIONS = WORKSHEET_DEFINITIONS;
 
         // ==================== AUTH CONTEXT ====================
 
         const AuthContext = createContext();
-
-        const useAuth = () => {
-          const context = useContext(AuthContext);
-          if (!context) {
-            throw new Error('useAuth must be used within AuthProvider');
-          }
-          return context;
-        };
+        const useAuth = () => { const context = useContext(AuthContext); if (!context) { throw new Error('useAuth must be used within AuthProvider'); } return context; };
 
         const AuthProvider = ({ children }) => {
           const [currentUser, setCurrentUser] = useState(null);
@@ -190,59 +189,23 @@
           const [viewData, setViewData] = useState(null);
           const [loading, setLoading] = useState(true);
 
-          useEffect(() => {
-            const sessionUser = localStorage.getItem('dbt_current_user');
-            if (sessionUser) {
-              const user = JSON.parse(sessionUser);
-              setCurrentUser(user);
-            }
-            setLoading(false);
-          }, []);
+          useEffect(() => { const sessionUser = localStorage.getItem('dbt_current_user'); if (sessionUser) { const user = JSON.parse(sessionUser); setCurrentUser(user); } setLoading(false); }, []);
 
-          const login = (user) => {
-            setCurrentUser(user);
-            localStorage.setItem('dbt_current_user', JSON.stringify(user));
-          };
+          const login = (user) => { setCurrentUser(user); localStorage.setItem('dbt_current_user', JSON.stringify(user)); };
+          const logout = () => { setCurrentUser(null); localStorage.removeItem('dbt_current_user'); setCurrentView('home'); setViewData(null); };
+          const onNavigate = (view, data = null) => { setCurrentView(view); setViewData(data); window.scrollTo(0, 0); };
 
-          const logout = () => {
-            setCurrentUser(null);
-            localStorage.removeItem('dbt_current_user');
-            setCurrentView('home');
-            setViewData(null);
-          };
-
-          const onNavigate = (view, data = null) => {
-            setCurrentView(view);
-            setViewData(data);
-            window.scrollTo(0, 0);
-          };
-
-          const value = {
-            currentUser,
-            currentView,
-            viewData,
-            login,
-            logout,
-            onNavigate,
-            loading
-          };
+          const value = { currentUser, currentView, viewData, login, logout, onNavigate, loading };
 
           if (loading) {
             return (
               <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">🧘</div>
-                  <div className="text-2xl font-bold text-gray-700">Loading WiseMind...</div>
-                </div>
+                <div className="text-center"><div className="text-6xl mb-4">🧘</div><div className="text-2xl font-bold text-gray-700">Loading WiseMind...</div></div>
               </div>
             );
           }
 
-          return (
-            <AuthContext.Provider value={value}>
-              {children}
-            </AuthContext.Provider>
-          );
+          return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
         };
 
         window.useAuth = useAuth;
@@ -251,7 +214,6 @@
 
         const EnhancedAuthScreen = () => {
           const { login } = useAuth();
-          
           const [mode, setMode] = useState('login');
           const [email, setEmail] = useState('');
           const [password, setPassword] = useState('');
@@ -259,86 +221,35 @@
           const [name, setName] = useState('');
           const [error, setError] = useState('');
           const [loading, setLoading] = useState(false);
-          const [showPassword, setShowPassword] = useState(false);
           const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
           const handleLogin = async (e) => {
             e.preventDefault();
             setError('');
             setLoading(true);
-
             try {
               const user = DataStore.getUserByEmail(email);
-              
-              if (!user) {
-                setError('No account found with this email');
-                setLoading(false);
-                return;
-              }
-
-              if (user.password !== password) {
-                setError('Incorrect password');
-                setLoading(false);
-                return;
-              }
-
+              if (!user) { setError('No account found with this email'); setLoading(false); return; }
+              if (user.password !== password) { setError('Incorrect password'); setLoading(false); return; }
               login(user);
-            } catch (err) {
-              setError('Login failed. Please try again.');
-              setLoading(false);
-            }
+            } catch (err) { setError('Login failed'); setLoading(false); }
           };
 
           const handleSignup = async (e) => {
             e.preventDefault();
             setError('');
-
-            if (!agreedToPrivacy) {
-              setError('You must agree to the privacy notice to create an account');
-              return;
-            }
-
-            if (!name || !email || !password) {
-              setError('Please fill in all fields');
-              return;
-            }
-
-            if (password.length < 8) {
-              setError('Password must be at least 8 characters');
-              return;
-            }
-
-            if (password !== confirmPassword) {
-              setError('Passwords do not match');
-              return;
-            }
-
+            if (!agreedToPrivacy) { setError('You must agree to the privacy notice'); return; }
+            if (!name || !email || !password) { setError('Please fill in all fields'); return; }
+            if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
+            if (password !== confirmPassword) { setError('Passwords do not match'); return; }
             setLoading(true);
-
             try {
               const existingUser = DataStore.getUserByEmail(email);
-              
-              if (existingUser) {
-                setError('An account with this email already exists');
-                setLoading(false);
-                return;
-              }
-
-              const newUser = {
-                id: Date.now().toString(),
-                email: email,
-                password: password,
-                name: name,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-              };
-
+              if (existingUser) { setError('An account with this email already exists'); setLoading(false); return; }
+              const newUser = { id: Date.now().toString(), email: email, password: password, name: name, createdAt: Date.now(), updatedAt: Date.now() };
               DataStore.addUser(newUser);
               login(newUser);
-            } catch (err) {
-              setError('Signup failed. Please try again.');
-              setLoading(false);
-            }
+            } catch (err) { setError('Signup failed'); setLoading(false); }
           };
 
           return (
@@ -346,235 +257,96 @@
               <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
                 <div className="text-center mb-8">
                   <div className="text-6xl mb-4">🧘</div>
-                  <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    WiseMind
-                  </h1>
+                  <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">WiseMind</h1>
                   <p className="text-gray-600">DBT Skills Tracker</p>
                 </div>
-
                 <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={() => { setMode('login'); setError(''); }}
-                    className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                      mode === 'login' ? 'bg-white text-purple-600 shadow' : 'text-gray-600'
-                    }`}
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => { setMode('signup'); setError(''); }}
-                    className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                      mode === 'signup' ? 'bg-white text-purple-600 shadow' : 'text-gray-600'
-                    }`}
-                  >
-                    Sign Up
-                  </button>
+                  <button onClick={() => { setMode('login'); setError(''); }} className={`flex-1 py-2 rounded-lg font-semibold transition-all ${mode === 'login' ? 'bg-white text-purple-600 shadow' : 'text-gray-600'}`}>Login</button>
+                  <button onClick={() => { setMode('signup'); setError(''); }} className={`flex-1 py-2 rounded-lg font-semibold transition-all ${mode === 'signup' ? 'bg-white text-purple-600 shadow' : 'text-gray-600'}`}>Sign Up</button>
                 </div>
-
                 {mode === 'login' ? (
                   <form onSubmit={handleLogin}>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-semibold mb-2">Email</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-semibold mb-2">Password</label>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    {error && (
-                      <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                        {error}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50"
-                    >
-                      {loading ? 'Logging in...' : 'Login'}
-                    </button>
+                    <div className="mb-4"><label className="block text-gray-700 font-semibold mb-2">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                    <div className="mb-4"><label className="block text-gray-700 font-semibold mb-2">Password</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                    {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">{error}</div>}
+                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50">{loading ? 'Logging in...' : 'Login'}</button>
                   </form>
                 ) : (
                   <form onSubmit={handleSignup}>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-semibold mb-2">Name</label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-semibold mb-2">Email</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-semibold mb-2">Password</label>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-semibold mb-2">Confirm Password</label>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="flex items-start gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={agreedToPrivacy}
-                          onChange={(e) => setAgreedToPrivacy(e.target.checked)}
-                          className="mt-1"
-                        />
-                        <span className="text-sm text-gray-700">
-                          I understand that this app stores data locally on my device
-                        </span>
-                      </label>
-                    </div>
-
-                    {error && (
-                      <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                        {error}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50"
-                    >
-                      {loading ? 'Creating Account...' : 'Sign Up'}
-                    </button>
+                    <div className="mb-4"><label className="block text-gray-700 font-semibold mb-2">Name</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                    <div className="mb-4"><label className="block text-gray-700 font-semibold mb-2">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                    <div className="mb-4"><label className="block text-gray-700 font-semibold mb-2">Password</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                    <div className="mb-4"><label className="block text-gray-700 font-semibold mb-2">Confirm Password</label><input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                    <div className="mb-4"><label className="flex items-start gap-2 cursor-pointer"><input type="checkbox" checked={agreedToPrivacy} onChange={(e) => setAgreedToPrivacy(e.target.checked)} className="mt-1" /><span className="text-sm text-gray-700">I understand data is stored locally</span></label></div>
+                    {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">{error}</div>}
+                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50">{loading ? 'Creating Account...' : 'Sign Up'}</button>
                   </form>
                 )}
-
-                <div className="mt-6 text-center text-sm text-gray-600">
-                  <p>🔒 Your data stays on your device</p>
-                  <p className="mt-1">No servers, no tracking, complete privacy</p>
-                </div>
+                <div className="mt-6 text-center text-sm text-gray-600"><p>🔒 Your data stays on your device</p></div>
               </div>
             </div>
           );
         };
 
-        // ==================== HOME COMPONENT ====================
+        // ==================== HOME ====================
 
         const Home = () => {
           const { currentUser, onNavigate } = useAuth();
-          const [stats, setStats] = useState({
-            totalSkills: 0,
-            currentStreak: 0
-          });
+          const [stats, setStats] = useState({ totalSkills: 0, totalWorksheets: 0, totalVulnerability: 0 });
 
           useEffect(() => {
             if (currentUser) {
               const skillEntries = DataStore.getSkillEntries(currentUser.id);
-              setStats({
-                totalSkills: skillEntries.length,
-                currentStreak: 0
-              });
+              const worksheetSessions = DataStore.getWorksheetSessions(currentUser.id);
+              const vulnerabilityEntries = DataStore.getVulnerabilityEntries(currentUser.id);
+              const completedWorksheets = Object.values(worksheetSessions).filter(s => s.status === 'completed');
+              setStats({ totalSkills: skillEntries.length, totalWorksheets: completedWorksheets.length, totalVulnerability: vulnerabilityEntries.length });
             }
           }, [currentUser]);
 
           const quickActions = [
             { id: 'skill-log', label: 'Log a Skill', icon: '📝', color: 'purple' },
-            { id: 'learn', label: 'Learn Skills', icon: '📚', color: 'blue' },
-            { id: 'safety-plan', label: 'Safety Plan', icon: '🔒', color: 'green' }
+            { id: 'worksheets', label: 'Worksheets', icon: '📄', color: 'blue' },
+            { id: 'learn', label: 'Learn Skills', icon: '📚', color: 'green' },
+            { id: 'distress-mode', label: 'I Need Help Now', icon: '🆘', color: 'red' },
+            { id: 'safety-plan', label: 'Safety Plan', icon: '🔒', color: 'orange' },
+            { id: 'insights', label: 'Insights', icon: '📊', color: 'indigo' }
           ];
 
           return (
             <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-6">
               <div className="max-w-6xl mx-auto">
                 <div className="mb-8">
-                  <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                    Welcome back, {currentUser.name || 'Friend'}! 👋
-                  </h1>
-                  <p className="text-xl text-gray-600">
-                    Ready to practice your DBT skills today?
-                  </p>
+                  <h1 className="text-4xl font-bold text-gray-800 mb-2">Welcome back, {currentUser.name || 'Friend'}! 👋</h1>
+                  <p className="text-xl text-gray-600">Ready to practice your DBT skills today?</p>
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
-                  <div className="bg-white rounded-xl p-6 shadow-md text-center">
-                    <div className="text-4xl mb-2">📝</div>
-                    <div className="text-3xl font-bold text-purple-600">{stats.totalSkills}</div>
-                    <div className="text-gray-600 text-sm">Skills Logged</div>
-                  </div>
-                  <div className="bg-white rounded-xl p-6 shadow-md text-center">
-                    <div className="text-4xl mb-2">🔥</div>
-                    <div className="text-3xl font-bold text-orange-600">{stats.currentStreak}</div>
-                    <div className="text-gray-600 text-sm">Day Streak</div>
-                  </div>
+                <div className="grid md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-white rounded-xl p-6 shadow-md text-center"><div className="text-4xl mb-2">📝</div><div className="text-3xl font-bold text-purple-600">{stats.totalSkills}</div><div className="text-gray-600 text-sm">Skills Logged</div></div>
+                  <div className="bg-white rounded-xl p-6 shadow-md text-center"><div className="text-4xl mb-2">📄</div><div className="text-3xl font-bold text-blue-600">{stats.totalWorksheets}</div><div className="text-gray-600 text-sm">Worksheets Done</div></div>
+                  <div className="bg-white rounded-xl p-6 shadow-md text-center"><div className="text-4xl mb-2">💪</div><div className="text-3xl font-bold text-green-600">{stats.totalVulnerability}</div><div className="text-gray-600 text-sm">ABC PLEASE Logs</div></div>
                 </div>
-
                 <div className="bg-white rounded-xl p-8 shadow-lg mb-8">
                   <h2 className="text-2xl font-bold text-gray-800 mb-6">Quick Actions</h2>
                   <div className="grid md:grid-cols-3 gap-4">
                     {quickActions.map((action) => (
-                      <button
-                        key={action.id}
-                        onClick={() => onNavigate(action.id)}
-                        className={`bg-gradient-to-br from-${action.color}-50 to-${action.color}-100 border-2 border-${action.color}-300 rounded-xl p-6 hover:shadow-lg transition-all transform hover:scale-105`}
-                      >
+                      <button key={action.id} onClick={() => onNavigate(action.id)} className={`bg-gradient-to-br from-${action.color}-50 to-${action.color}-100 border-2 border-${action.color}-300 rounded-xl p-6 hover:shadow-lg transition-all transform hover:scale-105`}>
                         <div className="text-5xl mb-3">{action.icon}</div>
                         <div className="font-semibold text-gray-800">{action.label}</div>
                       </button>
                     ))}
                   </div>
                 </div>
-
                 <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-8 text-white shadow-lg">
-                  <h2 className="text-2xl font-bold mb-3 flex items-center gap-2">
-                    <span>💡</span> Today's Reminder
-                  </h2>
-                  <p className="text-lg opacity-95">
-                    "You don't have to use skills perfectly. You just have to use them. Progress, not perfection."
-                  </p>
+                  <h2 className="text-2xl font-bold mb-3">💡 Today's Reminder</h2>
+                  <p className="text-lg opacity-95">"You don't have to use skills perfectly. You just have to use them. Progress, not perfection."</p>
                 </div>
               </div>
             </div>
           );
         };
 
-        // ==================== SKILL LOG ====================
-
+        // ============ SKILL LOG (keeping same as before) ============
+        
         const SkillLog = () => {
           const { currentUser } = useAuth();
           const [view, setView] = useState('list');
@@ -590,188 +362,39 @@
             helpfulness: 3
           });
 
-          useEffect(() => {
-            if (currentUser) {
-              loadEntries();
-            }
-          }, [currentUser]);
+          useEffect(() => { if (currentUser) { loadEntries(); } }, [currentUser]);
 
-          const loadEntries = () => {
-            if (!currentUser) return;
-            const allEntries = DataStore.getSkillEntries(currentUser.id);
-            setEntries(allEntries.sort((a, b) => new Date(b.date) - new Date(a.date)));
-          };
+          const loadEntries = () => { if (!currentUser) return; const allEntries = DataStore.getSkillEntries(currentUser.id); setEntries(allEntries.sort((a, b) => new Date(b.date) - new Date(a.date))); };
 
           const handleSubmit = (e) => {
             e.preventDefault();
             if (!currentUser) return;
-
-            const entry = {
-              id: Date.now().toString(),
-              userId: currentUser.id,
-              ...formData,
-              createdAt: Date.now()
-            };
-
+            const entry = { id: Date.now().toString(), userId: currentUser.id, ...formData, createdAt: Date.now() };
             DataStore.addSkillEntry(entry);
             loadEntries();
             setView('list');
-            setFormData({
-              date: new Date().toISOString().split('T')[0],
-              module: '',
-              skill: '',
-              emotionBefore: 5,
-              emotionAfter: 5,
-              trigger: '',
-              notes: '',
-              helpfulness: 3
-            });
+            setFormData({ date: new Date().toISOString().split('T')[0], module: '', skill: '', emotionBefore: 5, emotionAfter: 5, trigger: '', notes: '', helpfulness: 3 });
           };
 
-          const handleDelete = (id) => {
-            if (confirm('Delete this entry?')) {
-              DataStore.deleteSkillEntry(currentUser.id, id);
-              loadEntries();
-            }
-          };
+          const handleDelete = (id) => { if (confirm('Delete this entry?')) { DataStore.deleteSkillEntry(currentUser.id, id); loadEntries(); } };
 
           if (view === 'create') {
             return (
               <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-6">
                 <div className="max-w-3xl mx-auto">
-                  <button
-                    onClick={() => setView('list')}
-                    className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                  >
-                    <span className="text-xl">←</span>
-                    <span>Back</span>
-                  </button>
-
+                  <button onClick={() => setView('list')} className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900"><span className="text-xl">←</span><span>Back</span></button>
                   <div className="bg-white rounded-xl p-8 shadow-lg">
                     <h2 className="text-3xl font-bold mb-6 text-gray-800">Log a Skill</h2>
-
                     <form onSubmit={handleSubmit} className="space-y-6">
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">Date</label>
-                        <input
-                          type="date"
-                          value={formData.date}
-                          onChange={(e) => setFormData({...formData, date: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">DBT Module</label>
-                        <select
-                          value={formData.module}
-                          onChange={(e) => setFormData({...formData, module: e.target.value, skill: ''})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                          required
-                        >
-                          <option value="">Select a module...</option>
-                          {DBT_MODULES.map(module => (
-                            <option key={module} value={module}>{module}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {formData.module && (
-                        <div>
-                          <label className="block text-gray-700 font-semibold mb-2">Skill Used</label>
-                          <select
-                            value={formData.skill}
-                            onChange={(e) => setFormData({...formData, skill: e.target.value})}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                            required
-                          >
-                            <option value="">Select a skill...</option>
-                            {SKILL_DEFINITIONS[formData.module]?.map(skill => (
-                              <option key={skill} value={skill}>{skill}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">
-                          Emotion Before: {formData.emotionBefore}/10
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="10"
-                          value={formData.emotionBefore}
-                          onChange={(e) => setFormData({...formData, emotionBefore: parseInt(e.target.value)})}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">
-                          Emotion After: {formData.emotionAfter}/10
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="10"
-                          value={formData.emotionAfter}
-                          onChange={(e) => setFormData({...formData, emotionAfter: parseInt(e.target.value)})}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">Trigger (Optional)</label>
-                        <textarea
-                          value={formData.trigger}
-                          onChange={(e) => setFormData({...formData, trigger: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none"
-                          rows="2"
-                          placeholder="What prompted you to use this skill?"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">Notes (Optional)</label>
-                        <textarea
-                          value={formData.notes}
-                          onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none"
-                          rows="3"
-                          placeholder="How did it go? What did you notice?"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-gray-700 font-semibold mb-2">
-                          How helpful was this skill? {formData.helpfulness}/5
-                        </label>
-                        <div className="flex gap-2">
-                          {[1, 2, 3, 4, 5].map(rating => (
-                            <button
-                              key={rating}
-                              type="button"
-                              onClick={() => setFormData({...formData, helpfulness: rating})}
-                              className={`flex-1 py-3 rounded-lg border-2 transition-all ${
-                                formData.helpfulness >= rating
-                                  ? 'bg-yellow-400 border-yellow-500 text-white'
-                                  : 'bg-gray-100 border-gray-300 text-gray-600'
-                              }`}
-                            >
-                              ⭐
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-4 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg"
-                      >
-                        Save Entry
-                      </button>
+                      <div><label className="block text-gray-700 font-semibold mb-2">Date</label><input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required /></div>
+                      <div><label className="block text-gray-700 font-semibold mb-2">DBT Module</label><select value={formData.module} onChange={(e) => setFormData({...formData, module: e.target.value, skill: ''})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required><option value="">Select a module...</option>{DBT_MODULES.map(module => (<option key={module} value={module}>{module}</option>))}</select></div>
+                      {formData.module && (<div><label className="block text-gray-700 font-semibold mb-2">Skill Used</label><select value={formData.skill} onChange={(e) => setFormData({...formData, skill: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required><option value="">Select a skill...</option>{SKILL_DEFINITIONS[formData.module]?.map(skill => (<option key={skill} value={skill}>{skill}</option>))}</select></div>)}
+                      <div><label className="block text-gray-700 font-semibold mb-2">Emotion Before: {formData.emotionBefore}/10</label><input type="range" min="0" max="10" value={formData.emotionBefore} onChange={(e) => setFormData({...formData, emotionBefore: parseInt(e.target.value)})} className="w-full" /></div>
+                      <div><label className="block text-gray-700 font-semibold mb-2">Emotion After: {formData.emotionAfter}/10</label><input type="range" min="0" max="10" value={formData.emotionAfter} onChange={(e) => setFormData({...formData, emotionAfter: parseInt(e.target.value)})} className="w-full" /></div>
+                      <div><label className="block text-gray-700 font-semibold mb-2">Trigger (Optional)</label><textarea value={formData.trigger} onChange={(e) => setFormData({...formData, trigger: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none" rows="2" /></div>
+                      <div><label className="block text-gray-700 font-semibold mb-2">Notes (Optional)</label><textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none" rows="3" /></div>
+                      <div><label className="block text-gray-700 font-semibold mb-2">How helpful? {formData.helpfulness}/5</label><div className="flex gap-2">{[1, 2, 3, 4, 5].map(rating => (<button key={rating} type="button" onClick={() => setFormData({...formData, helpfulness: rating})} className={`flex-1 py-3 rounded-lg border-2 transition-all ${formData.helpfulness >= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-gray-100 border-gray-300 text-gray-600'}`}>⭐</button>))}</div></div>
+                      <button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-4 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg">Save Entry</button>
                     </form>
                   </div>
                 </div>
@@ -783,29 +406,16 @@
             <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-6">
               <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-8">
-                  <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    Skill Log
-                  </h1>
+                  <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Skill Log</h1>
                   <p className="text-xl text-gray-600 mb-6">Track your DBT skill practice</p>
-                  <button
-                    onClick={() => setView('create')}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg text-lg"
-                  >
-                    + Log a Skill
-                  </button>
+                  <button onClick={() => setView('create')} className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg text-lg">+ Log a Skill</button>
                 </div>
-
                 {entries.length === 0 ? (
                   <div className="bg-white rounded-xl p-12 text-center shadow-md">
                     <div className="text-6xl mb-4">📝</div>
                     <h3 className="text-2xl font-semibold text-gray-700 mb-2">No skills logged yet</h3>
                     <p className="text-gray-500 mb-6">Start tracking your DBT skill practice!</p>
-                    <button
-                      onClick={() => setView('create')}
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all"
-                    >
-                      Log Your First Skill
-                    </button>
+                    <button onClick={() => setView('create')} className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all">Log Your First Skill</button>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -814,53 +424,17 @@
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <h3 className="text-xl font-bold text-gray-800">{entry.skill}</h3>
-                            <p className="text-sm text-gray-500">
-                              {new Date(entry.date).toLocaleDateString()} • {entry.module}
-                            </p>
+                            <p className="text-sm text-gray-500">{new Date(entry.date).toLocaleDateString()} • {entry.module}</p>
                           </div>
-                          <button
-                            onClick={() => handleDelete(entry.id)}
-                            className="text-red-600 hover:text-red-800 transition-colors"
-                          >
-                            🗑️
-                          </button>
+                          <button onClick={() => handleDelete(entry.id)} className="text-red-600 hover:text-red-800 transition-colors">🗑️</button>
                         </div>
-
                         <div className="grid md:grid-cols-2 gap-4 mb-4">
-                          <div className="bg-red-50 p-3 rounded-lg">
-                            <div className="text-sm text-gray-600 mb-1">Emotion Before</div>
-                            <div className="text-2xl font-bold text-red-600">{entry.emotionBefore}/10</div>
-                          </div>
-                          <div className="bg-green-50 p-3 rounded-lg">
-                            <div className="text-sm text-gray-600 mb-1">Emotion After</div>
-                            <div className="text-2xl font-bold text-green-600">{entry.emotionAfter}/10</div>
-                          </div>
+                          <div className="bg-red-50 p-3 rounded-lg"><div className="text-sm text-gray-600 mb-1">Emotion Before</div><div className="text-2xl font-bold text-red-600">{entry.emotionBefore}/10</div></div>
+                          <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600 mb-1">Emotion After</div><div className="text-2xl font-bold text-green-600">{entry.emotionAfter}/10</div></div>
                         </div>
-
-                        {entry.trigger && (
-                          <div className="mb-3">
-                            <span className="font-semibold text-gray-700">Trigger: </span>
-                            <span className="text-gray-600">{entry.trigger}</span>
-                          </div>
-                        )}
-
-                        {entry.notes && (
-                          <div className="mb-3">
-                            <span className="font-semibold text-gray-700">Notes: </span>
-                            <span className="text-gray-600">{entry.notes}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-gray-700">Helpfulness:</span>
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map(star => (
-                              <span key={star} className={star <= entry.helpfulness ? 'text-yellow-400' : 'text-gray-300'}>
-                                ⭐
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                        {entry.trigger && (<div className="mb-3"><span className="font-semibold text-gray-700">Trigger: </span><span className="text-gray-600">{entry.trigger}</span></div>)}
+                        {entry.notes && (<div className="mb-3"><span className="font-semibold text-gray-700">Notes: </span><span className="text-gray-600">{entry.notes}</span></div>)}
+                        <div className="flex items-center gap-2"><span className="text-sm font-semibold text-gray-700">Helpfulness:</span><div className="flex">{[1, 2, 3, 4, 5].map(star => (<span key={star} className={star <= entry.helpfulness ? 'text-yellow-400' : 'text-gray-300'}>⭐</span>))}</div></div>
                       </div>
                     ))}
                   </div>
@@ -869,536 +443,1093 @@
             </div>
           );
         };
+// ==================== WORKSHEETS COMPONENT ====================
+const Worksheets = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
+  const [selectedWorksheet, setSelectedWorksheet] = React.useState(null);
+  const [sessions, setSessions] = React.useState({});
 
-        // ==================== LEARN COMPONENT (SIMPLIFIED) ====================
+  React.useEffect(() => {
+    if (currentUser) {
+      const allSessions = DataStore.getWorksheetSessions(currentUser.id);
+      setSessions(allSessions);
+    }
+  }, [currentUser]);
 
-        const Learn = () => {
-          const { onNavigate } = useAuth();
+  const handleWorksheetSelect = (worksheetId) => {
+    setSelectedWorksheet(worksheetId);
+  };
 
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-6">
-              <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-8">
-                  <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    Learn DBT Skills
-                  </h1>
-                  <p className="text-xl text-gray-600">
-                    Master the skills that will change your life
-                  </p>
-                </div>
+  const handleBack = () => {
+    setSelectedWorksheet(null);
+  };
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {Object.keys(SKILL_DEFINITIONS).map((module, index) => {
-                    const colors = ['purple', 'red', 'blue', 'green'];
-                    const icons = ['🧘', '🛡️', '💙', '🤝'];
-                    return (
-                      <div key={module} className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all">
-                        <div className="text-5xl mb-3 text-center">{icons[index]}</div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-3 text-center">{module}</h3>
-                        <ul className="space-y-2">
-                          {SKILL_DEFINITIONS[module].slice(0, 5).map(skill => (
-                            <li key={skill} className="text-sm text-gray-600">• {skill}</li>
-                          ))}
-                          {SKILL_DEFINITIONS[module].length > 5 && (
-                            <li className="text-sm text-gray-500 italic">
-                              +{SKILL_DEFINITIONS[module].length - 5} more...
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
+  if (selectedWorksheet) {
+    return <WorksheetSession worksheetId={selectedWorksheet} onBack={handleBack} />;
+  }
 
-                <div className="mt-8 bg-white rounded-xl p-8 shadow-lg text-center">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to Practice?</h2>
-                  <button
-                    onClick={() => onNavigate('skill-log')}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg"
-                  >
-                    Log Your Skills
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">📝 DBT Worksheets</h1>
+          <p className="text-gray-600 text-lg">Structured exercises to practice DBT skills</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {WORKSHEET_DEFINITIONS.map(worksheet => {
+            const session = sessions[worksheet.id];
+            const isCompleted = session?.status === 'completed';
+            const isInProgress = session?.status === 'in_progress';
+
+            return (
+              <div key={worksheet.id} className={`bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 ${isCompleted ? 'border-green-400' : isInProgress ? 'border-yellow-400' : 'border-transparent'}`}>
+                <div className={`h-2 ${worksheet.color}`}></div>
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="text-4xl">{worksheet.icon}</div>
+                    {isCompleted && <div className="text-2xl">✓</div>}
+                    {isInProgress && <div className="text-2xl">⏳</div>}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{worksheet.name}</h3>
+                  <p className="text-sm text-gray-600 mb-1">{worksheet.module}</p>
+                  <p className="text-gray-700 mb-4">{worksheet.description}</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                    <span>⏱️ {worksheet.estimatedTime}</span>
+                  </div>
+                  <button onClick={() => handleWorksheetSelect(worksheet.id)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                    {isCompleted ? 'Review' : isInProgress ? 'Continue' : 'Start'} Worksheet
                   </button>
                 </div>
               </div>
-            </div>
-          );
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== WORKSHEET SESSION ====================
+const WorksheetSession = ({ worksheetId, onBack }) => {
+  const { currentUser } = useAuth();
+  const worksheet = WORKSHEET_DEFINITIONS.find(w => w.id === worksheetId);
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const [responses, setResponses] = React.useState({});
+  const [session, setSession] = React.useState(null);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      const existingSession = DataStore.getWorksheetSession(currentUser.id, worksheetId);
+      if (existingSession) {
+        setSession(existingSession);
+        setResponses(existingSession.responses || {});
+        setCurrentStep(existingSession.currentStep || 0);
+      } else {
+        const newSession = {
+          worksheetId,
+          userId: currentUser.id,
+          status: 'in_progress',
+          startedAt: Date.now(),
+          currentStep: 0,
+          responses: {}
         };
+        DataStore.saveWorksheetSession(newSession);
+        setSession(newSession);
+      }
+    }
+  }, [currentUser, worksheetId]);
 
-        // ==================== SAFETY PLAN (SIMPLIFIED) ====================
+  const handleResponseChange = (questionId, value) => {
+    setResponses(prev => ({ ...prev, [questionId]: value }));
+  };
 
-        const SafetyPlan = () => {
-          const { currentUser } = useAuth();
-          const [plan, setPlan] = useState({
-            warningSignsInternal: '',
-            warningSignsExternal: '',
-            copingStrategies: '',
-            socialDistractions: '',
-            peopleWhoCanHelp: '',
-            professionalsToContact: '',
-            environmentSafety: '',
-            reasonsForLiving: ''
-          });
-          const [saveStatus, setSaveStatus] = useState('');
+  const handleNext = () => {
+    if (currentStep < worksheet.questions.length - 1) {
+      const updatedSession = { ...session, currentStep: currentStep + 1, responses, updatedAt: Date.now() };
+      DataStore.saveWorksheetSession(updatedSession);
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
-          useEffect(() => {
-            if (currentUser) {
-              const saved = DataStore.getSafetyPlan(currentUser.id);
-              if (saved) {
-                setPlan(saved);
-              }
-            }
-          }, [currentUser]);
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
-          const handleSave = () => {
-            if (!currentUser) return;
-            
-            setSaveStatus('saving');
-            const planWithMeta = {
-              ...plan,
-              userId: currentUser.id,
-              updatedAt: Date.now()
-            };
-            
-            DataStore.saveSafetyPlan(planWithMeta);
-            setSaveStatus('saved');
-            
-            setTimeout(() => setSaveStatus(''), 3000);
-          };
+  const handleComplete = () => {
+    const completedSession = { ...session, status: 'completed', responses, completedAt: Date.now(), updatedAt: Date.now() };
+    DataStore.saveWorksheetSession(completedSession);
+    alert('🎉 Worksheet completed! Great work!');
+    onBack();
+  };
 
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 p-6">
-              <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-8">
-                  <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-                    My Safety Plan
-                  </h1>
-                  <p className="text-xl text-gray-600 mb-6">
-                    A plan to keep you safe during a crisis
-                  </p>
-                  
-                  <div className="bg-red-100 border-l-4 border-red-500 rounded-lg p-4 mb-6">
-                    <h3 className="font-bold text-red-800 mb-2 flex items-center justify-center gap-2">
-                      <span>🆘</span> If You're in Crisis Right Now
-                    </h3>
-                    <div className="text-red-900 space-y-1">
-                      <p><strong>Call 988</strong> - Suicide & Crisis Lifeline (24/7)</p>
-                      <p><strong>Text HOME to 741741</strong> - Crisis Text Line</p>
-                      <p><strong>Call 911</strong> - Emergency Services</p>
+  if (!worksheet || !session) return <div className="p-8 text-center">Loading...</div>;
+
+  const currentQuestion = worksheet.questions[currentStep];
+  const progress = ((currentStep + 1) / worksheet.questions.length) * 100;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={onBack} className="mb-6 flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+          ← Back to Worksheets
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold text-gray-900">{worksheet.icon} {worksheet.name}</h2>
+              <span className="text-sm text-gray-600">Step {currentStep + 1} of {worksheet.questions.length}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300" style={{width: `${progress}%`}}></div>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">{currentQuestion.question}</h3>
+            {currentQuestion.help && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                <p className="text-sm text-blue-800">{currentQuestion.help}</p>
+              </div>
+            )}
+
+            {currentQuestion.type === 'textarea' && (
+              <textarea value={responses[currentQuestion.id] || ''} onChange={(e) => handleResponseChange(currentQuestion.id, e.target.value)} className="w-full h-40 p-4 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none" placeholder="Type your response here..."></textarea>
+            )}
+
+            {currentQuestion.type === 'rating' && (
+              <div className="space-y-4">
+                <input type="range" min="0" max="10" value={responses[currentQuestion.id] || 5} onChange={(e) => handleResponseChange(currentQuestion.id, e.target.value)} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>0 - Not at all</span>
+                  <span className="text-2xl font-bold text-indigo-600">{responses[currentQuestion.id] || 5}</span>
+                  <span>10 - Extremely</span>
+                </div>
+              </div>
+            )}
+
+            {currentQuestion.type === 'multiselect' && (
+              <div className="space-y-2">
+                {currentQuestion.options.map(option => {
+                  const selectedOptions = responses[currentQuestion.id] || [];
+                  const isSelected = selectedOptions.includes(option);
+                  return (
+                    <label key={option} className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors" style={{borderColor: isSelected ? '#4f46e5' : '#e5e7eb', backgroundColor: isSelected ? '#eef2ff' : 'white'}}>
+                      <input type="checkbox" checked={isSelected} onChange={(e) => {
+                        const current = responses[currentQuestion.id] || [];
+                        const updated = e.target.checked ? [...current, option] : current.filter(o => o !== option);
+                        handleResponseChange(currentQuestion.id, updated);
+                      }} className="w-5 h-5 text-indigo-600" />
+                      <span className="text-gray-800">{option}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {currentQuestion.type === 'checklist' && (
+              <div className="space-y-3">
+                {currentQuestion.items.map(item => {
+                  const checkedItems = responses[currentQuestion.id] || {};
+                  return (
+                    <div key={item} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50">
+                      <input type="checkbox" checked={checkedItems[item] || false} onChange={(e) => {
+                        const updated = { ...checkedItems, [item]: e.target.checked };
+                        handleResponseChange(currentQuestion.id, updated);
+                      }} className="w-5 h-5 text-indigo-600 mt-1" />
+                      <span className="text-gray-800">{item}</span>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-                  <button
-                    onClick={handleSave}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all shadow-md"
-                  >
-                    {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved!' : 'Save Plan'}
-                  </button>
+          <div className="flex justify-between gap-4">
+            <button onClick={handlePrevious} disabled={currentStep === 0} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              Previous
+            </button>
+            {currentStep < worksheet.questions.length - 1 ? (
+              <button onClick={handleNext} className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                Next
+              </button>
+            ) : (
+              <button onClick={handleComplete} className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                Complete Worksheet
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== DISTRESS MODE ====================
+const DistressMode = ({ onNavigate }) => {
+  const [selectedSkill, setSelectedSkill] = React.useState(null);
+
+  const crisisSkills = [
+    { id: 'tipp', name: 'TIPP', icon: '🧊', color: 'from-blue-500 to-cyan-500', description: 'Temperature, Intense exercise, Paced breathing, Paired muscle relaxation', steps: ['1. Use cold water/ice on face', '2. Do intense exercise (jumping jacks, run)', '3. Practice paced breathing', '4. Tense and relax muscle groups'] },
+    { id: 'stop', name: 'STOP', icon: '🛑', color: 'from-red-500 to-pink-500', description: 'Stop, Take a step back, Observe, Proceed mindfully', steps: ['1. STOP - freeze, don\'t react', '2. Take a step back - get space', '3. Observe - notice what\'s happening', '4. Proceed mindfully - choose wise action'] },
+    { id: 'grounding', name: '5-4-3-2-1', icon: '🌍', color: 'from-green-500 to-emerald-500', description: 'Grounding technique using five senses', steps: ['1. Name 5 things you can see', '2. Name 4 things you can touch', '3. Name 3 things you can hear', '4. Name 2 things you can smell', '5. Name 1 thing you can taste'] },
+    { id: 'breathing', name: 'Paced Breathing', icon: '🫁', color: 'from-purple-500 to-indigo-500', description: 'Slow your breathing to calm your body', steps: ['1. Breathe in slowly for 4 counts', '2. Hold for 4 counts', '3. Breathe out slowly for 6 counts', '4. Repeat for 3-5 minutes'] },
+    { id: 'self-soothe', name: 'Self-Soothe', icon: '🕯️', color: 'from-amber-500 to-orange-500', description: 'Use your five senses to comfort yourself', steps: ['1. Vision - look at something beautiful', '2. Hearing - listen to calming music', '3. Smell - use a pleasant scent', '4. Taste - enjoy a favorite flavor', '5. Touch - feel something comforting'] },
+    { id: 'acceptance', name: 'Radical Acceptance', icon: '🙏', color: 'from-teal-500 to-cyan-500', description: 'Accept reality as it is, without judgment', steps: ['1. Observe that you\'re fighting reality', '2. Remind yourself reality is what it is', '3. Accept with your whole self (mind & body)', '4. Practice acceptance over and over'] }
+  ];
+
+  const emergencyContacts = [
+    { name: '988 Suicide & Crisis Lifeline', number: '988', description: 'Call or text 24/7' },
+    { name: 'Crisis Text Line', number: 'Text HOME to 741741', description: 'Text support 24/7' },
+    { name: 'Emergency Services', number: '911', description: 'For immediate danger' }
+  ];
+
+  if (selectedSkill) {
+    const skill = crisisSkills.find(s => s.id === selectedSkill);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-100 via-orange-50 to-yellow-100 p-6">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setSelectedSkill(null)} className="mb-6 flex items-center gap-2 text-red-600 hover:text-red-800 font-medium transition-colors">
+            ← Back to Crisis Skills
+          </button>
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <div className={`text-6xl mb-4 text-center`}>{skill.icon}</div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">{skill.name}</h2>
+            <p className="text-lg text-gray-700 mb-8 text-center">{skill.description}</p>
+            <div className="space-y-4 mb-8">
+              {skill.steps.map((step, idx) => (
+                <div key={idx} className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-gray-800 font-medium">{step}</p>
                 </div>
+              ))}
+            </div>
+            <button onClick={() => onNavigate('skill-log', { prefilledSkill: skill.name })} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors">
+              ✓ I Used This Skill - Log It
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-                <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
-                  <h2 className="text-2xl font-bold text-red-600 mb-3 flex items-center gap-2">
-                    <span>⚠️</span> Step 1: Warning Signs
-                  </h2>
-                  
-                  <div className="mb-4">
-                    <label className="block text-gray-700 font-semibold mb-2">
-                      Internal Warning Signs (thoughts, images, mood):
-                    </label>
-                    <textarea
-                      value={plan.warningSignsInternal}
-                      onChange={(e) => setPlan({...plan, warningSignsInternal: e.target.value})}
-                      placeholder="Examples: Feeling hopeless, thinking 'I can't take this anymore'..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
-                      rows="4"
-                    />
-                  </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-100 via-orange-50 to-yellow-100 p-6">
+      <div className="max-w-5xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-red-600 hover:text-red-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
 
-                  <div>
-                    <label className="block text-gray-700 font-semibold mb-2">
-                      External Warning Signs (situations, people, events):
-                    </label>
-                    <textarea
-                      value={plan.warningSignsExternal}
-                      onChange={(e) => setPlan({...plan, warningSignsExternal: e.target.value})}
-                      placeholder="Examples: Arguments with family, being alone too long..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 resize-none"
-                      rows="4"
-                    />
-                  </div>
-                </div>
+        <div className="bg-red-50 border-2 border-red-400 rounded-2xl p-6 mb-8">
+          <h1 className="text-3xl font-bold text-red-900 mb-3">🚨 You're in Distress - That's Okay</h1>
+          <p className="text-lg text-red-800 mb-4">You're feeling overwhelmed right now, and that's a valid experience. These skills can help you get through this moment safely.</p>
+          <p className="text-red-700 font-semibold">If you're in immediate danger, please call 911 or go to your nearest emergency room.</p>
+        </div>
 
-                <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
-                  <h2 className="text-2xl font-bold text-orange-600 mb-3 flex items-center gap-2">
-                    <span>🧘</span> Step 2: Coping Strategies
-                  </h2>
-                  
-                  <textarea
-                    value={plan.copingStrategies}
-                    onChange={(e) => setPlan({...plan, copingStrategies: e.target.value})}
-                    placeholder="Examples: Use TIPP skill, go for a walk, practice paced breathing..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 resize-none"
-                    rows="6"
-                  />
-                </div>
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">📞 Emergency Contacts</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {emergencyContacts.map((contact, idx) => (
+              <div key={idx} className="border-2 border-red-300 rounded-xl p-4 hover:bg-red-50 transition-colors">
+                <h3 className="font-bold text-gray-900 mb-2">{contact.name}</h3>
+                <p className="text-2xl font-bold text-red-600 mb-1">{contact.number}</p>
+                <p className="text-sm text-gray-600">{contact.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
-                <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
-                  <h2 className="text-2xl font-bold text-green-600 mb-3 flex items-center gap-2">
-                    <span>🤝</span> Step 3: People Who Can Help
-                  </h2>
-                  
-                  <textarea
-                    value={plan.peopleWhoCanHelp}
-                    onChange={(e) => setPlan({...plan, peopleWhoCanHelp: e.target.value})}
-                    placeholder="Examples: Mom (555-1234), Best friend Alex (555-5678)..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 resize-none"
-                    rows="6"
-                  />
-                </div>
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">🛠️ Crisis Survival Skills</h2>
+          <p className="text-gray-700 mb-6">Choose a skill to use right now:</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {crisisSkills.map(skill => (
+              <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className={`bg-gradient-to-br ${skill.color} text-white rounded-xl p-6 hover:scale-105 transition-transform shadow-lg`}>
+                <div className="text-4xl mb-3">{skill.icon}</div>
+                <h3 className="text-xl font-bold mb-2">{skill.name}</h3>
+                <p className="text-sm text-white/90">{skill.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
 
-                <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl p-8 text-white shadow-lg mb-8">
-                  <h2 className="text-3xl font-bold mb-3 flex items-center gap-2">
-                    <span>💖</span> My Reasons for Living
-                  </h2>
-                  
-                  <textarea
-                    value={plan.reasonsForLiving}
-                    onChange={(e) => setPlan({...plan, reasonsForLiving: e.target.value})}
-                    placeholder="Examples: My kids need me, my dog depends on me, I want to travel someday..."
-                    className="w-full px-4 py-3 border-2 border-white/30 bg-white/20 text-white placeholder-white/60 rounded-lg resize-none"
-                    rows="6"
-                  />
-                </div>
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-6 mb-8">
+          <h2 className="text-xl font-bold text-blue-900 mb-3">💙 Remember</h2>
+          <ul className="space-y-2 text-blue-800">
+            <li>• This feeling will pass</li>
+            <li>• You've survived 100% of your worst days so far</li>
+            <li>• Using these skills is a sign of strength, not weakness</li>
+            <li>• It's okay to reach out for help</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== LEARN COMPONENT ====================
+const Learn = ({ onNavigate }) => {
+  const [selectedSkill, setSelectedSkill] = React.useState(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [moduleFilter, setModuleFilter] = React.useState('all');
+
+  const skillDetails = {
+    'Mindfulness': [
+      { id: 'wise-mind', name: 'Wise Mind', icon: '🧘', description: 'Balance between emotion mind and reasonable mind', whenToUse: 'When you need to make important decisions or find balance', howTo: ['Notice when you\'re in emotion mind (all feelings) or reasonable mind (all logic)', 'Take a few deep breaths', 'Ask yourself: "What does my wise mind say?"', 'Look for the middle path that honors both feelings and facts'], example: 'Before sending an angry text, pause and ask your wise mind what to do' },
+      { id: 'observe', name: 'Observe', icon: '👁️', description: 'Notice without judging or reacting', whenToUse: 'When you need to step back from a situation', howTo: ['Notice what you\'re sensing (sights, sounds, smells, tastes, touch)', 'Watch your thoughts and feelings like clouds passing', 'Don\'t judge as good or bad, just notice', 'Let experiences come and go'], example: 'Notice "I\'m having the thought that I\'m worthless" rather than believing it as fact' },
+      { id: 'describe', name: 'Describe', icon: '📝', description: 'Put words to your experience', whenToUse: 'When emotions feel overwhelming or confusing', howTo: ['Put labels on what you observe', 'Stick to the facts, not interpretations', 'Describe one thing at a time', 'Use neutral language'], example: 'Say "My heart is racing and my hands are shaking" instead of "I\'m having a panic attack and dying"' },
+      { id: 'participate', name: 'Participate', icon: '🎯', description: 'Fully engage in the present moment', whenToUse: 'When you want to feel more connected and alive', howTo: ['Throw yourself completely into an activity', 'Become one with what you\'re doing', 'Forget self-consciousness', 'Go with the flow'], example: 'When dancing, become the dance; when eating, fully taste each bite' }
+    ],
+    'Distress Tolerance': [
+      { id: 'tipp', name: 'TIPP', icon: '🧊', description: 'Temperature, Intense exercise, Paced breathing, Paired muscle relaxation', whenToUse: 'When emotions are at a 10/10 and you need immediate relief', howTo: ['T: Use cold water/ice on your face (triggers dive reflex)', 'I: Do intense exercise for 10-20 minutes', 'P: Practice paced breathing (slow, deep breaths)', 'P: Tense and release muscle groups'], example: 'Hold ice cubes when you feel the urge to self-harm' },
+      { id: 'accepts', name: 'ACCEPTS', icon: '🎨', description: 'Activities, Contributing, Comparisons, Emotions, Pushing away, Thoughts, Sensations', whenToUse: 'When you need to distract from painful emotions temporarily', howTo: ['Activities: Do something engaging', 'Contributing: Help someone else', 'Comparisons: Compare to times you felt worse', 'Emotions: Create opposite emotions (funny videos)', 'Pushing away: Mentally push the situation away for now', 'Thoughts: Focus thoughts elsewhere (counting, puzzles)', 'Sensations: Create strong physical sensations'], example: 'Watch a funny movie when feeling depressed; do a puzzle when anxious' },
+      { id: 'radical-acceptance', name: 'Radical Acceptance', icon: '🙏', description: 'Accepting reality as it is, without judgment', whenToUse: 'When you\'re fighting against reality and causing yourself suffering', howTo: ['Observe that you\'re questioning or fighting reality', 'Remind yourself that reality is what it is', 'Accept with your whole self (mind, body, spirit)', 'Practice accepting over and over again', 'Note what you feel after accepting'], example: 'Accept that someone you love has died, even though it\'s painful' }
+    ],
+    'Emotion Regulation': [
+      { id: 'opposite-action', name: 'Opposite Action', icon: '🔄', description: 'Act opposite to your emotion urge', whenToUse: 'When your emotion doesn\'t fit the facts or isn\'t effective', howTo: ['Identify the emotion and its action urge', 'Check if the emotion fits the facts', 'If not, act opposite ALL THE WAY', 'Do the opposite with your body, face, and posture'], example: 'If you feel like hiding when anxious, approach the situation instead' },
+      { id: 'please', name: 'PLEASE', icon: '💊', description: 'PhysicaL illness, Eating, Avoid drugs, Sleep, Exercise', whenToUse: 'Daily preventive maintenance for emotional health', howTo: ['Treat physical illness promptly', 'Eat balanced, regular meals', 'Avoid mood-altering substances', 'Get consistent, adequate sleep', 'Exercise regularly'], example: 'Eat three meals, sleep 7-9 hours, exercise 20 minutes daily' },
+      { id: 'check-the-facts', name: 'Check the Facts', icon: '🔍', description: 'Question your interpretations and assumptions', whenToUse: 'When emotions seem extreme or don\'t match the situation', howTo: ['Describe the facts of the situation', 'Identify your interpretations/judgments', 'Ask: What\'s the evidence for and against?', 'Consider alternative explanations', 'Assess if the emotion fits the facts'], example: 'Friend doesn\'t text back → fact. They hate me → interpretation to check' }
+    ],
+    'Interpersonal Effectiveness': [
+      { id: 'dear-man', name: 'DEAR MAN', icon: '💬', description: 'Effectively ask for what you need', whenToUse: 'When you need to make a request or set a boundary', howTo: ['Describe the situation', 'Express your feelings/opinions', 'Assert by asking clearly', 'Reinforce by explaining benefits', 'stay Mindful (broken record)', 'Appear confident', 'Negotiate if needed'], example: '"When you cancel plans last-minute (D), I feel hurt (E). Could you give me 24hr notice? (A) That way I can make other plans (R)."' },
+      { id: 'give', name: 'GIVE', icon: '💝', description: 'Maintain relationships while being effective', whenToUse: 'When you want to keep a relationship strong while asking for something', howTo: ['be Gentle (no attacks, threats, judgments)', 'act Interested (listen, don\'t interrupt)', 'Validate their feelings/perspective', 'use an Easy manner (smile, be lighthearted)'], example: 'Listen to their side, validate their feelings, even while disagreeing' },
+      { id: 'fast', name: 'FAST', icon: '🛡️', description: 'Keep your self-respect in interactions', whenToUse: 'When you need to maintain your values and self-respect', howTo: ['be Fair to yourself and others', 'no Apologies (for existing, having opinions)', 'Stick to your values', 'be Truthful (no lies or exaggerations)'], example: 'Don\'t apologize for asking for time off; you deserve breaks' }
+    ]
+  };
+
+  const allSkills = Object.entries(skillDetails).flatMap(([module, skills]) => 
+    skills.map(skill => ({ ...skill, module }))
+  );
+
+  const filteredSkills = allSkills.filter(skill => {
+    const matchesSearch = skill.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         skill.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesModule = moduleFilter === 'all' || skill.module === moduleFilter;
+    return matchesSearch && matchesModule;
+  });
+
+  if (selectedSkill) {
+    const skill = allSkills.find(s => s.id === selectedSkill);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setSelectedSkill(null)} className="mb-6 flex items-center gap-2 text-green-600 hover:text-green-800 font-medium transition-colors">
+            ← Back to Skills
+          </button>
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">{skill.icon}</div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">{skill.name}</h2>
+              <p className="text-lg text-gray-600 mb-2">{skill.module} Skill</p>
+              <p className="text-gray-700">{skill.description}</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-blue-50 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-blue-900 mb-3">⏰ When to Use</h3>
+                <p className="text-blue-800">{skill.whenToUse}</p>
+              </div>
+
+              <div className="bg-purple-50 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-purple-900 mb-4">📋 How to Do It</h3>
+                <ol className="space-y-2">
+                  {skill.howTo.map((step, idx) => (
+                    <li key={idx} className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">{idx + 1}</span>
+                      <span className="text-purple-900">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className="bg-green-50 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-green-900 mb-3">💡 Example</h3>
+                <p className="text-green-800">{skill.example}</p>
               </div>
             </div>
-          );
-        };
 
-        // ==================== SETTINGS (SIMPLIFIED) ====================
+            <button onClick={() => onNavigate('skill-log', { prefilledSkill: skill.name })} className="w-full mt-8 bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors">
+              Log This Skill
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-        const Settings = () => {
-          const { currentUser, logout, onNavigate } = useAuth();
-          const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-green-600 hover:text-green-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
 
-          const handleExport = () => {
-            const data = DataStore.exportUserData(currentUser.id);
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `wisemind_backup_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          };
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">📚 Learn DBT Skills</h1>
+          <p className="text-gray-600 text-lg mb-6">Explore detailed guides for each skill</p>
 
-          const handleDeleteAccount = () => {
-            if (confirm('Are you absolutely sure? This will delete ALL your data permanently.')) {
-              DataStore.deleteUser(currentUser.id);
-              logout();
-            }
-          };
+          <div className="flex flex-col md:flex-row gap-4">
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search skills..." className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none" />
+            <select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+              <option value="all">All Modules</option>
+              {DBT_MODULES.map(mod => <option key={mod.id} value={mod.name}>{mod.name}</option>)}
+            </select>
+          </div>
+        </div>
 
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-6">
-              <div className="max-w-4xl mx-auto">
-                <h1 className="text-5xl font-bold mb-8 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Settings
-                </h1>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSkills.map(skill => (
+            <button key={skill.id} onClick={() => setSelectedSkill(skill.id)} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 text-left border-2 border-transparent hover:border-green-400">
+              <div className="text-4xl mb-4">{skill.icon}</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{skill.name}</h3>
+              <p className="text-sm text-gray-600 mb-3">{skill.module}</p>
+              <p className="text-gray-700 mb-4">{skill.description}</p>
+              <span className="text-green-600 font-semibold">Learn More →</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-                <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Account</h2>
-                  <p className="text-gray-700 mb-2">
-                    <strong>Name:</strong> {currentUser.name}
-                  </p>
-                  <p className="text-gray-700">
-                    <strong>Email:</strong> {currentUser.email}
-                  </p>
+// ==================== SAFETY PLAN ====================
+const SafetyPlan = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
+  const [plan, setPlan] = React.useState({
+    warningSignsInternal: '',
+    warningSignsExternal: '',
+    copingStrategies: '',
+    socialDistractions: '',
+    peopleWhoCanHelp: '',
+    professionalsToContact: '',
+    environmentSafety: '',
+    reasonsForLiving: ''
+  });
+  const [saveStatus, setSaveStatus] = React.useState('');
+
+  React.useEffect(() => {
+    if (currentUser) {
+      const saved = DataStore.getSafetyPlan(currentUser.id);
+      if (saved) setPlan(saved);
+    }
+  }, [currentUser]);
+
+  const handleSave = () => {
+    if (!currentUser) return;
+    setSaveStatus('saving');
+    DataStore.saveSafetyPlan({ ...plan, userId: currentUser.id, updatedAt: Date.now() });
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus(''), 3000);
+  };
+
+  const handleExport = () => {
+    const planText = `MY SAFETY PLAN\nCreated: ${new Date().toLocaleDateString()}\n\nSTEP 1: WARNING SIGNS\nInternal: ${plan.warningSignsInternal || '(Not filled)'}\nExternal: ${plan.warningSignsExternal || '(Not filled)'}\n\nSTEP 2: COPING STRATEGIES\n${plan.copingStrategies || '(Not filled)'}\n\nSTEP 3: SOCIAL DISTRACTIONS\n${plan.socialDistractions || '(Not filled)'}\n\nSTEP 4: PEOPLE WHO CAN HELP\n${plan.peopleWhoCanHelp || '(Not filled)'}\n\nSTEP 5: PROFESSIONALS\n${plan.professionalsToContact || '(Not filled)'}\n\nSTEP 6: ENVIRONMENT SAFETY\n${plan.environmentSafety || '(Not filled)'}\n\nSTEP 7: REASONS FOR LIVING\n${plan.reasonsForLiving || '(Not filled)'}\n\nEMERGENCY CONTACTS\n988 - Suicide & Crisis Lifeline\n741741 - Crisis Text Line\n911 - Emergency Services`;
+    const blob = new Blob([planText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `safety-plan-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const sections = [
+    { key: 'warningSignsInternal', label: 'Step 1a: Internal Warning Signs', placeholder: 'Thoughts, images, mood, behaviors that show a crisis might be developing...' },
+    { key: 'warningSignsExternal', label: 'Step 1b: External Warning Signs', placeholder: 'Situations, people, events, or circumstances that lead to crisis...' },
+    { key: 'copingStrategies', label: 'Step 2: Coping Strategies', placeholder: 'Things I can do on my own to feel better (take a walk, listen to music, exercise)...' },
+    { key: 'socialDistractions', label: 'Step 3: Social Distractions', placeholder: 'People and social settings that provide distraction (friends to call, places to go)...' },
+    { key: 'peopleWhoCanHelp', label: 'Step 4: People Who Can Help', placeholder: 'People I can ask for help (friends, family, their phone numbers)...' },
+    { key: 'professionalsToContact', label: 'Step 5: Professionals to Contact', placeholder: 'Mental health professionals, crisis services, their contact information...' },
+    { key: 'environmentSafety', label: 'Step 6: Making Environment Safe', placeholder: 'How to reduce access to lethal means (remove pills, give away weapons, etc.)...' },
+    { key: 'reasonsForLiving', label: 'Step 7: Reasons for Living', placeholder: 'What makes life worth living (people, pets, goals, values, hopes)...' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-red-600 hover:text-red-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">🛡️ Safety Plan</h1>
+          <p className="text-gray-600 text-lg mb-6">A plan to keep yourself safe during a crisis</p>
+
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <p className="text-red-800 font-semibold">⚠️ If you're in immediate danger, call 911 or go to your nearest emergency room.</p>
+            <p className="text-red-700 mt-2">National Suicide Prevention Lifeline: <strong>988</strong> (call or text)</p>
+          </div>
+
+          <div className="space-y-6">
+            {sections.map(section => (
+              <div key={section.key}>
+                <label className="block text-lg font-semibold text-gray-900 mb-2">{section.label}</label>
+                <textarea value={plan[section.key]} onChange={(e) => setPlan({...plan, [section.key]: e.target.value})} placeholder={section.placeholder} className="w-full h-32 p-4 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none"></textarea>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-4 mt-8">
+            <button onClick={handleSave} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+              {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved!' : 'Save Safety Plan'}
+            </button>
+            <button onClick={handleExport} className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors">
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== TRACK VULNERABILITY ====================
+const TrackVulnerability = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
+  const [showForm, setShowForm] = React.useState(true);
+  const [entry, setEntry] = React.useState({ sleep: 5, meals: 5, exercise: 5, meds: 5, substances: 5, physicalHealth: 5, stress: 5, notes: '' });
+  const [entries, setEntries] = React.useState([]);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      setEntries(DataStore.getVulnerabilityEntries(currentUser.id) || []);
+    }
+  }, [currentUser]);
+
+  const handleSubmit = () => {
+    if (!currentUser) return;
+    const newEntry = { ...entry, userId: currentUser.id, date: new Date().toISOString().split('T')[0], timestamp: Date.now() };
+    DataStore.addVulnerabilityEntry(newEntry);
+    setEntries(DataStore.getVulnerabilityEntries(currentUser.id));
+    setEntry({ sleep: 5, meals: 5, exercise: 5, meds: 5, substances: 5, physicalHealth: 5, stress: 5, notes: '' });
+    alert('✓ Vulnerability factors recorded!');
+  };
+
+  const factors = [
+    { key: 'sleep', label: 'Sleep Quality', icon: '😴', lowLabel: 'Poor', highLabel: 'Excellent' },
+    { key: 'meals', label: 'Eating Regularly', icon: '🍽️', lowLabel: 'Skipped', highLabel: 'All Meals' },
+    { key: 'exercise', label: 'Physical Activity', icon: '🏃', lowLabel: 'None', highLabel: 'Active' },
+    { key: 'meds', label: 'Medication Adherence', icon: '💊', lowLabel: 'Missed', highLabel: 'On Track' },
+    { key: 'substances', label: 'Substance Use', icon: '🚫', lowLabel: 'High', highLabel: 'None' },
+    { key: 'physicalHealth', label: 'Physical Health', icon: '🩺', lowLabel: 'Sick', highLabel: 'Healthy' },
+    { key: 'stress', label: 'Stress Level', icon: '😰', lowLabel: 'Very High', highLabel: 'Low' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-yellow-50 p-6">
+      <div className="max-w-5xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-amber-600 hover:text-amber-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">📊 Track Vulnerability Factors</h1>
+          <p className="text-gray-600 text-lg">Monitor daily factors that affect your emotional health (PLEASE skills)</p>
+        </div>
+
+        <div className="flex gap-4 mb-6">
+          <button onClick={() => setShowForm(true)} className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${showForm ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+            Log Today
+          </button>
+          <button onClick={() => setShowForm(false)} className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${!showForm ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-700'}`}>
+            View History ({entries.length})
+          </button>
+        </div>
+
+        {showForm ? (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">How are you doing today?</h2>
+            <div className="space-y-6">
+              {factors.map(factor => (
+                <div key={factor.key}>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-lg font-semibold text-gray-900">{factor.icon} {factor.label}</label>
+                    <span className="text-2xl font-bold text-amber-600">{entry[factor.key]}</span>
+                  </div>
+                  <input type="range" min="0" max="10" value={entry[factor.key]} onChange={(e) => setEntry({...entry, [factor.key]: parseInt(e.target.value)})} className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600" />
+                  <div className="flex justify-between text-sm text-gray-600 mt-1">
+                    <span>{factor.lowLabel}</span>
+                    <span>{factor.highLabel}</span>
+                  </div>
                 </div>
-
-                <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Data</h2>
-                  <button
-                    onClick={handleExport}
-                    className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-all mb-4"
-                  >
-                    📥 Export My Data
-                  </button>
-                  <p className="text-sm text-gray-600">
-                    Download a backup of all your data in JSON format
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">About</h2>
-                  <button
-                    onClick={() => onNavigate('privacy-notice')}
-                    className="text-blue-600 hover:underline mb-2 block"
-                  >
-                    Privacy Notice
-                  </button>
-                  <button
-                    onClick={() => onNavigate('about-designer')}
-                    className="text-blue-600 hover:underline block"
-                  >
-                    About This App
-                  </button>
-                  <p className="text-sm text-gray-500 mt-4">Version 1.9.3</p>
-                </div>
-
-                <div className="bg-red-50 border border-red-300 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-red-600 mb-4">Danger Zone</h2>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-all"
-                  >
-                    Delete Account
-                  </button>
-                  
-                  {showDeleteConfirm && (
-                    <div className="mt-4 p-4 bg-red-100 rounded-lg">
-                      <p className="text-red-900 font-semibold mb-3">
-                        Are you absolutely sure? This cannot be undone!
-                      </p>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={handleDeleteAccount}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                        >
-                          Yes, Delete Everything
-                        </button>
-                        <button
-                          onClick={() => setShowDeleteConfirm(false)}
-                          className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
-                        >
-                          Cancel
-                        </button>
+              ))}
+              <div>
+                <label className="block text-lg font-semibold text-gray-900 mb-2">Notes (optional)</label>
+                <textarea value={entry.notes} onChange={(e) => setEntry({...entry, notes: e.target.value})} placeholder="Any additional notes about your day..." className="w-full h-24 p-4 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"></textarea>
+              </div>
+            </div>
+            <button onClick={handleSubmit} className="w-full mt-6 bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors">
+              Save Today's Entry
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {entries.length === 0 ? (
+              <div className="bg-white rounded-xl p-8 text-center">
+                <p className="text-gray-600">No entries yet. Start logging to track your vulnerability factors over time!</p>
+              </div>
+            ) : (
+              entries.slice().reverse().map((e, idx) => (
+                <div key={idx} className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-bold text-gray-900">{e.date}</h3>
+                    <span className="text-sm text-gray-600">{new Date(e.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {factors.map(factor => (
+                      <div key={factor.key} className="text-center">
+                        <div className="text-2xl mb-1">{factor.icon}</div>
+                        <div className="text-sm text-gray-600 mb-1">{factor.label}</div>
+                        <div className="text-xl font-bold text-amber-600">{e[factor.key]}/10</div>
                       </div>
+                    ))}
+                  </div>
+                  {e.notes && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-gray-700">{e.notes}</p>
                     </div>
                   )}
                 </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==================== INSIGHTS & ANALYTICS ====================
+const Insights = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
+  const [entries, setEntries] = React.useState([]);
+  const [timeRange, setTimeRange] = React.useState('30');
+
+  React.useEffect(() => {
+    if (currentUser) {
+      setEntries(DataStore.getSkillEntries(currentUser.id) || []);
+    }
+  }, [currentUser]);
+
+  const daysAgo = parseInt(timeRange);
+  const cutoffDate = Date.now() - (daysAgo * 24 * 60 * 60 * 1000);
+  const filteredEntries = entries.filter(e => e.timestamp >= cutoffDate);
+
+  const totalEntries = filteredEntries.length;
+  const avgEmotionBefore = filteredEntries.filter(e => e.emotionBefore).reduce((sum, e) => sum + e.emotionBefore, 0) / filteredEntries.filter(e => e.emotionBefore).length || 0;
+  const avgEmotionAfter = filteredEntries.filter(e => e.emotionAfter).reduce((sum, e) => sum + e.emotionAfter, 0) / filteredEntries.filter(e => e.emotionAfter).length || 0;
+  const avgHelpfulness = filteredEntries.filter(e => e.helpfulness).reduce((sum, e) => sum + e.helpfulness, 0) / filteredEntries.filter(e => e.helpfulness).length || 0;
+
+  const moduleCount = {};
+  filteredEntries.forEach(e => {
+    if (e.module) moduleCount[e.module] = (moduleCount[e.module] || 0) + 1;
+  });
+
+  const skillCount = {};
+  filteredEntries.forEach(e => {
+    if (e.skill) skillCount[e.skill] = (skillCount[e.skill] || 0) + 1;
+  });
+
+  const topSkills = Object.entries(skillCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topModules = Object.entries(moduleCount).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">📊 Insights & Analytics</h1>
+          <p className="text-gray-600 text-lg mb-6">Track your progress and patterns</p>
+          <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+          </select>
+        </div>
+
+        {totalEntries === 0 ? (
+          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div className="text-6xl mb-4">📈</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">No data yet</h2>
+            <p className="text-gray-600 mb-6">Start logging skills to see your insights!</p>
+            <button onClick={() => onNavigate('skill-log')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+              Log Your First Skill
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
+                <div className="text-3xl mb-2">📝</div>
+                <div className="text-4xl font-bold mb-1">{totalEntries}</div>
+                <div className="text-blue-100">Skills Logged</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-xl p-6 text-white">
+                <div className="text-3xl mb-2">📉</div>
+                <div className="text-4xl font-bold mb-1">{(avgEmotionBefore - avgEmotionAfter).toFixed(1)}</div>
+                <div className="text-green-100">Avg Emotion Reduction</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+                <div className="text-3xl mb-2">⭐</div>
+                <div className="text-4xl font-bold mb-1">{avgHelpfulness.toFixed(1)}/5</div>
+                <div className="text-purple-100">Avg Helpfulness</div>
+              </div>
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white">
+                <div className="text-3xl mb-2">🔥</div>
+                <div className="text-4xl font-bold mb-1">{Math.ceil(totalEntries / daysAgo)}</div>
+                <div className="text-orange-100">Skills per Day</div>
               </div>
             </div>
-          );
-        };
 
-        // ==================== SIMPLE PAGES ====================
-
-        const PrivacyNotice = () => {
-          const { onNavigate } = useAuth();
-          
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-6">
-              <div className="max-w-4xl mx-auto">
-                <h1 className="text-5xl font-bold mb-8 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Privacy Notice
-                </h1>
-                
-                <div className="bg-white rounded-xl p-8 shadow-lg mb-6">
-                  <h2 className="text-3xl font-bold text-purple-600 mb-4">Your Privacy Matters</h2>
-                  <p className="text-gray-700 text-lg mb-4">
-                    WiseMind is designed with your privacy as the top priority. All your data is stored locally on your device using browser storage. We never collect, transmit, or store any of your information on external servers.
-                  </p>
-                  <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
-                    <p className="text-green-900 font-semibold">
-                      ✓ All your data stays on YOUR device
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    onClick={() => onNavigate('home')}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg"
-                  >
-                    ← Back to App
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        const AboutDesigner = () => {
-          const { onNavigate } = useAuth();
-          
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 p-6">
-              <div className="max-w-4xl mx-auto">
-                <h1 className="text-5xl font-bold mb-8 bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
-                  About This App
-                </h1>
-                
-                <div className="bg-white rounded-xl p-8 shadow-lg mb-6">
-                  <h2 className="text-3xl font-bold text-indigo-600 mb-4">Our Mission</h2>
-                  <p className="text-gray-700 text-lg mb-4">
-                    WiseMind was created to make DBT skills accessible, practical, and easy to use in daily life. This is a free, privacy-focused tool to help you learn, practice, and track DBT skills on your own terms.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl p-8 shadow-lg mb-6">
-                  <h2 className="text-2xl font-bold text-pink-600 mb-4">Version Information</h2>
-                  <p className="text-gray-700"><strong>Current Version:</strong> 1.9.3</p>
-                  <p className="text-gray-700"><strong>Release Date:</strong> January 2024</p>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    onClick={() => onNavigate('home')}
-                    className="bg-gradient-to-r from-indigo-500 to-pink-500 text-white px-8 py-4 rounded-lg font-semibold hover:from-indigo-600 hover:to-pink-600 transition-all shadow-lg"
-                  >
-                    ← Back to App
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        // ==================== MAIN APP ====================
-
-        const App = () => {
-          const { currentUser, currentView, onNavigate, logout } = useAuth();
-          const [showMobileMenu, setShowMobileMenu] = useState(false);
-
-          if (!currentUser) {
-            return <EnhancedAuthScreen />;
-          }
-
-          const menuItems = [
-            { id: 'home', label: 'Home', icon: '🏠' },
-            { id: 'learn', label: 'Learn', icon: '📚' },
-            { id: 'skill-log', label: 'Skill Log', icon: '📝' },
-            { id: 'safety-plan', label: 'Safety Plan', icon: '🔒' },
-            { id: 'settings', label: 'Settings', icon: '⚙️' }
-          ];
-
-          const renderView = () => {
-            switch (currentView) {
-              case 'home': return <Home />;
-              case 'learn': return <Learn />;
-              case 'skill-log': return <SkillLog />;
-              case 'safety-plan': return <SafetyPlan />;
-              case 'privacy-notice': return <PrivacyNotice />;
-              case 'about-designer': return <AboutDesigner />;
-              case 'settings': return <Settings />;
-              default: return <Home />;
-            }
-          };
-
-          return (
-            <div className="min-h-screen bg-gray-50 flex">
-              {/* Sidebar - Desktop */}
-              <div className="hidden md:block w-64 bg-gradient-to-b from-purple-600 to-blue-600 text-white fixed h-full overflow-y-auto">
-                <div className="p-6">
-                  <h1 className="text-3xl font-bold mb-2">WiseMind</h1>
-                  <p className="text-sm opacity-90">DBT Skills Tracker</p>
-                  <div className="mt-4 text-xs opacity-75">
-                    Hello, {currentUser.name || currentUser.email}
-                  </div>
-                </div>
-
-                <nav className="px-3 pb-6">
-                  {menuItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        onNavigate(item.id);
-                        setShowMobileMenu(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 rounded-lg mb-2 transition-all flex items-center gap-3 ${
-                        currentView === item.id
-                          ? 'bg-white text-purple-600 font-semibold shadow-lg'
-                          : 'hover:bg-white/20'
-                      }`}
-                    >
-                      <span className="text-xl">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Most Used Skills</h2>
+                <div className="space-y-4">
+                  {topSkills.map(([skill, count], idx) => (
+                    <div key={idx}>
+                      <div className="flex justify-between mb-2">
+                        <span className="font-semibold text-gray-900">{skill}</span>
+                        <span className="text-purple-600 font-bold">{count}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full" style={{width: `${(count / topSkills[0][1]) * 100}%`}}></div>
+                      </div>
+                    </div>
                   ))}
-
-                  <div className="border-t border-white/20 my-4"></div>
-
-                  <button
-                    onClick={logout}
-                    className="w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 hover:bg-white/20 text-white/90"
-                  >
-                    <span className="text-xl">🚪</span>
-                    <span>Logout</span>
-                  </button>
-                </nav>
-              </div>
-
-              {/* Mobile Header */}
-              <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white z-40 shadow-lg">
-                <div className="flex items-center justify-between p-4">
-                  <h1 className="text-2xl font-bold">WiseMind</h1>
-                  <button
-                    onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="text-3xl"
-                  >
-                    {showMobileMenu ? '✕' : '☰'}
-                  </button>
                 </div>
               </div>
 
-              {/* Mobile Menu */}
-              {showMobileMenu && (
-                <div className="md:hidden fixed inset-0 bg-gradient-to-b from-purple-600 to-blue-600 text-white z-30 overflow-y-auto pt-20">
-                  <div className="p-4">
-                    <nav>
-                      {menuItems.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            onNavigate(item.id);
-                            setShowMobileMenu(false);
-                          }}
-                          className={`w-full text-left px-4 py-4 rounded-lg mb-2 transition-all flex items-center gap-3 text-lg ${
-                            currentView === item.id
-                              ? 'bg-white text-purple-600 font-semibold shadow-lg'
-                              : 'hover:bg-white/20'
-                          }`}
-                        >
-                          <span className="text-2xl">{item.icon}</span>
-                          <span>{item.label}</span>
-                        </button>
-                      ))}
-
-                      <div className="border-t border-white/20 my-4"></div>
-
-                      <button
-                        onClick={() => {
-                          logout();
-                          setShowMobileMenu(false);
-                        }}
-                        className="w-full text-left px-4 py-4 rounded-lg transition-all flex items-center gap-3 text-lg hover:bg-white/20 text-white/90"
-                      >
-                        <span className="text-2xl">🚪</span>
-                        <span>Logout</span>
-                      </button>
-                    </nav>
-                  </div>
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Skills by Module</h2>
+                <div className="space-y-4">
+                  {topModules.map(([module, count], idx) => (
+                    <div key={idx}>
+                      <div className="flex justify-between mb-2">
+                        <span className="font-semibold text-gray-900">{module}</span>
+                        <span className="text-blue-600 font-bold">{count}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full" style={{width: `${(count / totalEntries) * 100}%`}}></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {/* Main Content */}
-              <div className="flex-1 md:ml-64 mt-16 md:mt-0">
-                {renderView()}
               </div>
             </div>
-          );
-        };
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
-        // ==================== RENDER ====================
+// ==================== SETTINGS ====================
+const Settings = ({ onNavigate }) => {
+  const { currentUser, logout } = useAuth();
+  const [exportStatus, setExportStatus] = React.useState('');
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-          React.createElement(AuthProvider, null,
-            React.createElement(App)
-          )
-        );
-    </script>
+  const handleExport = () => {
+    if (!currentUser) return;
+    setExportStatus('exporting');
+    const data = {
+      user: DataStore.getUser(currentUser.id),
+      skillEntries: DataStore.getSkillEntries(currentUser.id),
+      worksheetSessions: DataStore.getWorksheetSessions(currentUser.id),
+      safetyPlan: DataStore.getSafetyPlan(currentUser.id),
+      vulnerabilityEntries: DataStore.getVulnerabilityEntries(currentUser.id),
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wisemind-data-${currentUser.username}-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setExportStatus('exported');
+    setTimeout(() => setExportStatus(''), 3000);
+  };
+
+  const handleDeleteAccount = () => {
+    if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
+      if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+        DataStore.deleteUser(currentUser.id);
+        logout();
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 p-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          ← Back to Home
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">⚙️ Settings</h1>
+          <p className="text-gray-600">Manage your account and data</p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Account</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Username:</span>
+                <span className="font-semibold text-gray-900">{currentUser?.username}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Account created:</span>
+                <span className="font-semibold text-gray-900">{new Date(currentUser?.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Data Management</h2>
+            <button onClick={handleExport} className="w-full mb-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+              {exportStatus === 'exporting' ? 'Exporting...' : exportStatus === 'exported' ? '✓ Exported!' : 'Export All Data (JSON)'}
+            </button>
+            <p className="text-sm text-gray-600 mb-4">Download all your data in JSON format for backup or transfer.</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">About</h2>
+            <div className="space-y-2 text-gray-700">
+              <p><strong>WiseMind DBT Skills Tracker</strong></p>
+              <p>Version 1.9.3</p>
+              <p className="text-sm">All data is stored locally in your browser. No data is sent to any server.</p>
+            </div>
+            <div className="mt-4 space-y-2">
+              <button onClick={() => onNavigate('privacy')} className="w-full text-left text-blue-600 hover:text-blue-800 font-semibold">
+                → Privacy Notice
+              </button>
+              <button onClick={() => onNavigate('about')} className="w-full text-left text-blue-600 hover:text-blue-800 font-semibold">
+                → About This App
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6">
+            <h2 className="text-2xl font-bold text-red-900 mb-4">Danger Zone</h2>
+            <button onClick={handleDeleteAccount} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+              Delete Account
+            </button>
+            <p className="text-sm text-red-700 mt-3">This will permanently delete all your data. This action cannot be undone.</p>
+          </div>
+
+          <div className="text-center">
+            <button onClick={logout} className="text-gray-600 hover:text-gray-800 font-semibold">
+              Log Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== PRIVACY NOTICE ====================
+const PrivacyNotice = ({ onNavigate }) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => onNavigate('settings')} className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium transition-colors">
+          ← Back to Settings
+        </button>
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">🔒 Privacy Notice</h1>
+          <div className="prose prose-lg max-w-none space-y-6 text-gray-700">
+            <p className="text-sm text-gray-600"><strong>Last Updated:</strong> January 2024</p>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Your Privacy Matters</h2>
+              <p>WiseMind is designed with your privacy as the top priority. Unlike most apps, <strong>WiseMind stores absolutely no data on any server</strong>. Everything you enter stays on your device.</p>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Local Storage Only</h2>
+              <p>All your data (skill logs, worksheets, safety plans, etc.) is stored exclusively in your browser's local storage. This means:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Your data never leaves your device</li>
+                <li>No one (including us) can access your information</li>
+                <li>Your data is private by default</li>
+              </ul>
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 my-4">
+                <p className="text-yellow-800"><strong>⚠️ Important:</strong> If you clear your browser data or uninstall your browser, your WiseMind data will be lost. Always export backups regularly!</p>
+              </div>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">What We DON'T Collect</h2>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>No tracking cookies</li>
+                <li>No analytics</li>
+                <li>No server communication</li>
+                <li>No third-party data sharing</li>
+                <li>No location data</li>
+                <li>No email addresses (unless you choose to use one as a username)</li>
+              </ul>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Your Rights</h2>
+              <p><strong>You have complete control:</strong></p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Export your data anytime (Settings → Export Data)</li>
+                <li>Delete your account and all data anytime</li>
+                <li>Your data belongs to you, always</li>
+              </ul>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Important Limitations</h2>
+              <ul className="list-disc pl-6 space-y-2">
+                <li><strong>Not a substitute for professional care:</strong> WiseMind is a self-help tool, not a replacement for therapy or medical treatment</li>
+                <li><strong>Emergency situations:</strong> In a crisis, call 988 (Suicide & Crisis Lifeline) or 911</li>
+                <li><strong>Data persistence:</strong> Data only exists on your current browser/device</li>
+              </ul>
+            </section>
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-6">
+              <p className="text-blue-800"><strong>Questions?</strong> This is an open-source project. You can inspect the code to verify these privacy claims.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== ABOUT PAGE ====================
+const AboutPage = ({ onNavigate }) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => onNavigate('settings')} className="mb-6 flex items-center gap-2 text-green-600 hover:text-green-800 font-medium transition-colors">
+          ← Back to Settings
+        </button>
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">💚 About WiseMind</h1>
+          <div className="prose prose-lg max-w-none space-y-6 text-gray-700">
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Our Mission</h2>
+              <p>WiseMind exists to make Dialectical Behavior Therapy (DBT) skills accessible, practical, and easy to track for everyone who wants to improve their emotional wellbeing.</p>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Why This App Exists</h2>
+              <p>DBT is one of the most effective therapies for emotional regulation, but practicing skills consistently is hard. WiseMind helps you:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Remember which skills to use when</li>
+                <li>Track what works for you</li>
+                <li>See your progress over time</li>
+                <li>Have resources available in crisis moments</li>
+              </ul>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Design Principles</h2>
+              <ul className="list-disc pl-6 space-y-2">
+                <li><strong>Privacy First:</strong> All data stays on your device, always</li>
+                <li><strong>No Barriers:</strong> Free, no account required (username only)</li>
+                <li><strong>Evidence-Based:</strong> Built on actual DBT curriculum</li>
+                <li><strong>Simple & Beautiful:</strong> Easy to use when you're struggling</li>
+              </ul>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">What Makes Us Different</h2>
+              <p>Unlike other mental health apps:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>✅ Completely free, no subscriptions</li>
+                <li>✅ No data collection or tracking</li>
+                <li>✅ Works offline (after first load)</li>
+                <li>✅ No ads, ever</li>
+                <li>✅ Open source - you can verify everything</li>
+              </ul>
+            </section>
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 my-6">
+              <h3 className="text-xl font-bold text-red-900 mb-2">⚠️ Important Disclaimer</h3>
+              <p className="text-red-800">WiseMind is a self-help tool, not a replacement for professional mental health care. If you're in crisis, please:</p>
+              <ul className="list-disc pl-6 mt-2 text-red-800">
+                <li>Call 988 (Suicide & Crisis Lifeline)</li>
+                <li>Text HOME to 741741 (Crisis Text Line)</li>
+                <li>Call 911 or go to your nearest emergency room</li>
+                <li>Contact your therapist or doctor</li>
+              </ul>
+            </div>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Version</h2>
+              <p><strong>WiseMind v1.9.3</strong></p>
+              <p className="text-sm text-gray-600">Single-file edition</p>
+            </section>
+            <section className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-xl">
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Thank You</h2>
+              <p>Thank you for using WiseMind. Your commitment to learning and practicing these skills is incredibly meaningful. Recovery is possible, and you're taking real steps toward it.</p>
+              <p className="mt-4">💚 You've got this.</p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== MAIN APP ====================
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
+
+const AppContent = () => {
+  const { currentUser, isLoading, navigate, currentView, navigationData } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-bounce">🧠</div>
+          <h2 className="text-2xl font-bold text-gray-900">Loading WiseMind...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <EnhancedAuthScreen />;
+  }
+
+  const views = {
+    'home': <Home onNavigate={navigate} />,
+    'skill-log': <SkillLog onNavigate={navigate} navigationData={navigationData} />,
+    'worksheets': <Worksheets onNavigate={navigate} />,
+    'insights': <Insights onNavigate={navigate} />,
+    'distress': <DistressMode onNavigate={navigate} />,
+    'learn': <Learn onNavigate={navigate} />,
+    'safety-plan': <SafetyPlan onNavigate={navigate} />,
+    'track-vulnerability': <TrackVulnerability onNavigate={navigate} />,
+    'settings': <Settings onNavigate={navigate} />,
+    'privacy': <PrivacyNotice onNavigate={navigate} />,
+    'about': <AboutPage onNavigate={navigate} />
+  };
+
+  return views[currentView] || views['home'];
+};
+
+// ==================== RENDER APP ====================
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
 </body>
 </html>
